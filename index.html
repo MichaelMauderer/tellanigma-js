@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+    <title>Worldgen</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.1/dist/leaflet.css"/>
+
+    <style>
+        body {
+            margin: 0;
+            border: 0;
+            padding: 0;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+        }
+
+    </style>
+</head>
+<body>
+<div id="map"></div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script src="https://mapzen.com/tangram/0.10/tangram.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.0.1/dist/leaflet.js"></script>
+
+<script>
+    var map = L.map('map');
+    var layer = Tangram.leafletLayer({scene: 'scene.yaml'});
+    layer.addTo(map);
+
+    map.setView([0, 0], 1);
+
+
+    var popup = L.popup();
+
+    function onMapClick(selection) {
+        if (selection.feature) {
+            var latlng = selection.leaflet_event.latlng;
+            var label = "";
+            label += "Temperature: " + selection.feature.properties.temperature + "</br>";
+            label += "Humidity: " + selection.feature.properties.relativehumidity + "</br>";
+            label += "Vegetation: " + selection.feature.properties.vegetationdensity + "</br>";
+            label += "Precipitation: " + selection.feature.properties.precipitation + "</br>";
+            label += "Elevation: " + selection.feature.properties.elevation + "</br>";
+
+            showPopup(latlng, label);
+        }
+    }
+
+    function showPopup(latlng, label) {
+        popup
+            .setLatLng(latlng)
+            .setContent('<p>' + label + '</p>')
+            .openOn(map);
+    }
+
+    // ADD TANGRAMLOADED LISTENER
+    layer.setSelectionEvents({
+        click: onMapClick
+    });
+
+    var mapNum = 0;
+    layer.scene.subscribe({
+        view_complete: function () {
+            //layer.scene.screenshot().then(function(screenshot) { window.open(screenshot.url); });
+            layer.scene.setDataSource('local', {type: 'GeoJSON', url: 'https://tellanigma.herokuapp.com/tiles/' + mapNum});
+            mapNum = (mapNum + 1 ) % 180;
+            //layer.rebuild();
+        }
+    });
+
+
+    // ADD LAYER TOGGLE
+    var LayerToggleControl = L.Control.extend({
+        options: {
+            position: 'topright'
+        },
+
+        onAdd: function () {
+            var container = L.DomUtil.create('div', 'layer-control');
+            container.innerHTML = '<p><label><input id="humidity_toggle" type="checkbox" >Humidity</label></p>';
+            container.innerHTML += '<p><label><input id="vegetation_toggle" type="checkbox" >Vegetation</label></p>';
+            container.innerHTML += '<p><label><input id="temperature_toggle" type="checkbox" >Temperature</label></p>';
+
+            L.DomEvent.on(container, 'click', this.toggleOnClick);
+            return container;
+        },
+
+        toggleOnClick: function (e) {
+            var humidityChecked = document.getElementById('humidity_toggle').checked;
+            var vegetationChecked = document.getElementById('vegetation_toggle').checked;
+            var temperatureChecked = document.getElementById('temperature_toggle').checked;
+
+            if (layer.scene) {
+                layer.scene.config.layers.humidity.visible = humidityChecked;
+                layer.scene.config.layers.vegetation.visible = vegetationChecked;
+                layer.scene.config.layers.temperature.visible = temperatureChecked;
+
+                layer.scene.updateConfig();
+            }
+        }
+    });
+    var toggleControl = new LayerToggleControl();
+    map.addControl(toggleControl);
+
+
+</script>
+</body>
+</html>

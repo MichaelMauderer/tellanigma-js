@@ -1,0 +1,122 @@
+cameras:
+    camera1:
+        type: isometric
+
+lights:
+    directional1:
+        type: directional
+        direction: [1, -.6, -.5]
+        diffuse: [1.000, 0.931, 0.776]
+        ambient: .3
+
+
+sources:
+      local:
+          type: GeoJSON
+          url: https://tellanigma.herokuapp.com/tiles/
+
+lights:
+    light:
+        type: directional
+scene:
+    background:
+        color: black
+layers:
+    water:
+      filter: function() { return feature.elevation <= 0; }
+      visible: true
+      data: { source: local }
+      draw:
+        polygons:
+          interactive: true
+          min_height: -20000
+          extrude: function() { return feature.elevation ; }
+          color: function() { return [0.1, 0.1,  1 - 0.09 * Math.log(1 + Math.abs(feature.elevation))]; }
+          order: 0
+          collide: false
+          material:
+            diffuse: 0.0
+            ambient: 0
+            specular: 0.5
+          shininess: 2.0
+    baseland:
+      filter: function() { return feature.elevation > 0 ; }
+      visible: true
+      data: { source: local }
+      draw:
+        polygons:
+          interactive: true
+          z: function() { return 100 * feature.elevation ; }
+          extrude: true
+          color: function() { return [ 0.75 * (1- feature.vegetationdensity), 0.25 + 0.5 * (1-feature.vegetationdensity), 0.125 + 0.55 *(1-feature.vegetationdensity)]; }
+          order: 2
+          collide: false
+    ice:
+      filter: function() { return feature.temperature < 0; }
+      visible: true
+      data: { source: local }
+      draw:
+          polygons:
+            order: 99
+            blend: overlay
+            color: function() { if (feature.elevation < 0) {return [0.95,0.95,1];}else{return [1,1,1];} }
+            collide: false
+    desert:
+      filter: function() { return feature.elevation > 0 && feature.temperature > 30 && feature.vegetationdensity < 0.001; }
+      visible: false
+      data: { source: local }
+      draw:
+          polygons:
+            extrude: function() { return 10000 * feature.elevation ; }
+            color: function() { return [0.5 + 0.5 * (feature.temperature - 30)/20, 0.5 + 0.5 *(feature.temperature - 30)/20 ,0.5];}
+            order: 3
+            collide: false
+    rain:
+      visible: false
+      data: { source: local }
+      draw:
+        polygons:
+          color: function() { return [0, 0, 5 * feature.precipitation/10E20]; }
+          order: 5
+    elevation:
+      filter: function() { return feature.elevation > 0; }
+      visible: false
+      data: { source: local }
+      draw:
+        polygons:
+          blend: overlay
+          interactive: true
+          blend_order: 1
+          color: function() { return [ 0.9, 0.9, 0.9, 0.5]; }
+          order: 5
+    humidity:
+      filter: function() { return feature.elevation > 0 ; }
+      visible: false
+      data: { source: local }
+      draw:
+        polygons:
+          interactive: true
+          blend: overlay
+          color: function() { return [ 1 - 0.5 * feature.relativehumidity/10, 1.0 - feature.relativehumidity/10, 0]; }
+          order: 5
+    vegetation:
+      filter: function() { return feature.elevation > 0; }
+      visible: false
+      data: { source: local }
+      draw:
+        polygons:
+          interactive: true
+          blend: overlay
+          color: function() { return [ feature.vegetationdensity, feature.vegetationdensity, feature.vegetationdensity]; }
+          order: 5
+    temperature:
+      visible: false
+      data: { source: local }
+      draw:
+        polygons:
+          interactive: true
+          blend: overlay
+          color: function() { return [ (feature.temperature+100) / 200, 0, 1 - ((feature.temperature+100) / 200)]; }
+          order: 5
+
+
