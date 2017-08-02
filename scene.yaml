@@ -13,7 +13,7 @@ lights:
 sources:
       local:
           type: GeoJSON
-          url: https://tellanigma.herokuapp.com/tiles/
+          url:  https://tellanigma-dev.herokuapp.com/tiles/
 
 lights:
     light:
